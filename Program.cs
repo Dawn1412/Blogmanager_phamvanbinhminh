@@ -1,7 +1,14 @@
+using Blogmanager_phamvanbinhminh.Data;
+using Microsoft.EntityFrameworkCore; // Add dòng này để dùng được UseSqlite
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Sửa lại thành builder.Configuration
+builder.Services.AddDbContext<ApplicationDBContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
@@ -24,6 +31,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

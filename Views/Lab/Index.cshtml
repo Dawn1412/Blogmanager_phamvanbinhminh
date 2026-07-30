@@ -1,9 +1,46 @@
-<h1> Thử nghiệm C# và LINQ</h1>
-<p> Sổ bài đã xuất bản: <strong>@ViewBag.SoDaXuatBan</strong></p>
+@{
+    ViewData["Title"] = "Thống kê bài viết";
+    var hot = ViewBag.BaiVietHotNhat as Blogmanager_phamvanbinhminh.Models.Post;
+    var list = ViewBag.BaiDaXuatBan as List<Blogmanager_phamvanbinhminh.Models.Post>;
+}
 
-<ul>
-    @foreach (var tieuDe in ViewBag.TieuDe)
+<div class="container mt-4">
+    <h2>Thống kê bài viết</h2>
+
+    <div class="alert alert-info">
+        Tổng lượt xem: <strong>@ViewBag.TongLuotXem</strong>
+    </div>
+
+    @if (hot != null)
     {
-        <li>@tieuDe</li>
+        <div class="alert alert-success">
+            Bài viết hot nhất: <strong>@hot.Title</strong> (@hot.Author - @hot.ViewCount lượt xem)
+        </div>
     }
-</ul>
+
+    <h3 class="mt-4">Bài viết đã xuất bản</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tiêu đề</th>
+                <th>Tác giả</th>
+                <th>Lượt xem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (list != null)
+            {
+                foreach (var item in list)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td>@item.Title</td>
+                        <td>@item.Author</td>
+                        <td>@item.ViewCount</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
