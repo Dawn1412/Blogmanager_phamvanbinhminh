@@ -24,6 +24,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
 
             var postsQuery = await _context.Posts
                 .Include(p => p.Category)
+                .Include(p => p.Tags)
                 .ToListAsync();
 
             // Tìm kiếm tiếng Việt (có dấu & không dấu)
@@ -47,7 +48,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             {
                 "title" => query.OrderBy(p => p.Title),
                 "oldest" => query.OrderBy(p => p.PublishedAt),
-                _ => query.OrderByDescending(p => p.CreatedAt) // Mặc định sắp xếp theo CreatedAt giảm dần
+                _ => query.OrderByDescending(p => p.CreatedAt)
             };
 
             // Phân trang
@@ -78,6 +79,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
         {
             var post = await _context.Posts
                 .Include(p => p.Category)
+                .Include(p => p.Tags)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (post == null) return NotFound();
@@ -89,17 +91,53 @@ namespace Blogmanager_phamvanbinhminh.Controllers
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = await _context.Categories.ToListAsync();
+            ViewBag.Tags = await _context.Tags.ToListAsync();
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Post post)
+        public async Task<IActionResult> Create(Post post, int[]? selectedTagIds, string? newTags)
         {
             if (!ModelState.IsValid)
             {
                 ViewBag.Categories = await _context.Categories.ToListAsync();
+                ViewBag.Tags = await _context.Tags.ToListAsync();
+                ViewBag.SelectedTagIds = selectedTagIds?.ToList() ?? new List<int>();
+                ViewBag.NewTags = newTags;
                 return View(post);
+            }
+
+            // 1. Xử lý gán thẻ có sẵn
+            if (selectedTagIds != null && selectedTagIds.Length > 0)
+            {
+                var existingTags = await _context.Tags.Where(t => selectedTagIds.Contains(t.Id)).ToListAsync();
+                post.Tags.AddRange(existingTags);
+            }
+
+            // 2. Xử lý thẻ mới từ Input text
+            if (!string.IsNullOrWhiteSpace(newTags))
+            {
+                var tagNames = newTags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(t => t.Trim())
+                                      .Where(t => !string.IsNullOrEmpty(t))
+                                      .Distinct(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var tagName in tagNames)
+                {
+                    var existingTag = await _context.Tags.FirstOrDefaultAsync(t => t.Name.ToLower() == tagName.ToLower());
+                    if (existingTag != null)
+                    {
+                        if (!post.Tags.Any(t => t.Id == existingTag.Id))
+                        {
+                            post.Tags.Add(existingTag);
+                        }
+                    }
+                    else
+                    {
+                        post.Tags.Add(new Tag { Name = tagName });
+                    }
+                }
             }
 
             post.CreatedAt = DateTime.Now;
@@ -112,28 +150,86 @@ namespace Blogmanager_phamvanbinhminh.Controllers
         // 4. EDIT
         public async Task<IActionResult> Edit(int id)
         {
-            var post = await _context.Posts.FindAsync(id);
+            var post = await _context.Posts
+                .Include(p => p.Tags)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (post == null) return NotFound();
 
             ViewBag.Categories = await _context.Categories.ToListAsync();
+            ViewBag.Tags = await _context.Tags.ToListAsync();
+            ViewBag.SelectedTagIds = post.Tags.Select(t => t.Id).ToList();
+
             return View(post);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Post post)
+        public async Task<IActionResult> Edit(int id, Post post, int[]? selectedTagIds, string? newTags)
         {
             if (id != post.Id) return NotFound();
 
             if (!ModelState.IsValid)
             {
                 ViewBag.Categories = await _context.Categories.ToListAsync();
+                ViewBag.Tags = await _context.Tags.ToListAsync();
+                ViewBag.SelectedTagIds = selectedTagIds?.ToList() ?? new List<int>();
+                ViewBag.NewTags = newTags;
                 return View(post);
             }
 
             try
             {
-                _context.Update(post);
+                var existingPost = await _context.Posts
+                    .Include(p => p.Tags)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (existingPost == null) return NotFound();
+
+                // Cập nhật thông tin cơ bản
+                existingPost.Title = post.Title;
+                existingPost.Content = post.Content;
+                existingPost.Author = post.Author;
+                existingPost.PublishedAt = post.PublishedAt;
+                existingPost.IsPublished = post.IsPublished;
+                existingPost.CategoryId = post.CategoryId;
+
+                // Cập nhật Tags: Xóa toàn bộ tag cũ
+                existingPost.Tags.Clear();
+
+                // Gán các tag đã chọn từ Checkbox
+                if (selectedTagIds != null && selectedTagIds.Length > 0)
+                {
+                    var selectedTags = await _context.Tags.Where(t => selectedTagIds.Contains(t.Id)).ToListAsync();
+                    existingPost.Tags.AddRange(selectedTags);
+                }
+
+                // Gán/tạo thêm các thẻ mới từ Textbox
+                if (!string.IsNullOrWhiteSpace(newTags))
+                {
+                    var tagNames = newTags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(t => t.Trim())
+                                          .Where(t => !string.IsNullOrEmpty(t))
+                                          .Distinct(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var tagName in tagNames)
+                    {
+                        var existingTag = await _context.Tags.FirstOrDefaultAsync(t => t.Name.ToLower() == tagName.ToLower());
+                        if (existingTag != null)
+                        {
+                            if (!existingPost.Tags.Any(t => t.Id == existingTag.Id))
+                            {
+                                existingPost.Tags.Add(existingTag);
+                            }
+                        }
+                        else
+                        {
+                            existingPost.Tags.Add(new Tag { Name = tagName });
+                        }
+                    }
+                }
+
+                _context.Update(existingPost);
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -150,6 +246,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
         {
             var post = await _context.Posts
                 .Include(p => p.Category)
+                .Include(p => p.Tags)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (post == null) return NotFound();
@@ -171,7 +268,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Hàm hỗ trợ xóa dấu tiếng Việt
+        // Hàm xóa dấu tiếng Việt
         private string RemoveDiacritics(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return text;

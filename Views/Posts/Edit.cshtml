@@ -4,24 +4,24 @@
     ViewData["Title"] = "Chỉnh sửa bài viết";
 }
 
-<h2 class="fw-bold mb-3">Chỉnh sửa bài viết</h2>
-
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-8">
+        <h2 class="fw-bold mb-3">Chỉnh sửa bài viết</h2>
+        <hr />
+
         <form asp-action="Edit" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             
-            <!-- Hidden field giữ ID bài viết -->
             <input type="hidden" asp-for="Id" />
 
-            <!-- 1. Tiêu đề (dùng Title thay vì Name) -->
+            <!-- Tiêu đề -->
             <div class="mb-3">
                 <label asp-for="Title" class="form-label fw-semibold">Tiêu đề</label>
                 <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề..." />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
 
-            <!-- 2. Danh mục -->
+            <!-- Danh mục -->
             <div class="mb-3">
                 <label asp-for="CategoryId" class="form-label fw-semibold">Danh mục</label>
                 <select asp-for="CategoryId" class="form-select">
@@ -37,26 +37,74 @@
                 <span asp-validation-for="CategoryId" class="text-danger"></span>
             </div>
 
-            <!-- 3. Nội dung -->
+            <!-- Thẻ (Checkboxes) -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Thẻ</label>
+                <div class="d-flex flex-wrap gap-3">
+                    @if (ViewBag.Tags != null)
+                    {
+                        var selectedTagIds = ViewBag.SelectedTagIds as List<int> ?? new List<int>();
+                        foreach (var tag in ViewBag.Tags)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="selectedTagIds" value="@tag.Id" id="tag-@tag.Id"
+                                       @(selectedTagIds.Contains(tag.Id) ? "checked" : "") />
+                                <label class="form-check-label" for="tag-@tag.Id">@tag.Name</label>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Thẻ mới -->
+            <div class="mb-3">
+                <label for="newTags" class="form-label fw-semibold">Thẻ mới</label>
+                <input type="text" id="newTags" name="newTags" class="form-control" placeholder="Ví dụ: Razor Pages, Middleware" value="@ViewBag.NewTags" />
+                <div class="form-text text-muted">
+                    Thẻ chưa có trong danh sách trên thì gõ vào đây, cách nhau bởi dấu phẩy. Tên đã tồn tại sẽ được dùng lại chứ không tạo thẻ trùng.
+                </div>
+            </div>
+
+            <!-- Ngày xuất bản -->
+            <div class="mb-3">
+                <label asp-for="PublishedAt" class="form-label fw-semibold">Ngày xuất bản</label>
+                <input asp-for="PublishedAt" type="date" class="form-control" />
+                <span asp-validation-for="PublishedAt" class="text-danger"></span>
+            </div>
+
+            <!-- Nội dung -->
             <div class="mb-3">
                 <label asp-for="Content" class="form-label fw-semibold">Nội dung</label>
                 <textarea asp-for="Content" class="form-control" rows="5" placeholder="Nhập nội dung bài viết..."></textarea>
                 <span asp-validation-for="Content" class="text-danger"></span>
             </div>
 
-            <!-- 4. Trạng thái xuất bản -->
-            <div class="mb-3 form-check">
-                <input asp-for="IsPublished" class="form-check-input" type="checkbox" id="isPublishedCheck" />
-                <label class="form-check-label fw-semibold" for="isPublishedCheck">
-                    Xuất bản ngay
-                </label>
+            <!-- Tác giả -->
+            <div class="mb-3">
+                <label asp-for="Author" class="form-label fw-semibold">Tác giả</label>
+                <input asp-for="Author" class="form-control" placeholder="Nhập tên tác giả..." />
+                <span asp-validation-for="Author" class="text-danger"></span>
+            </div>
+
+            <!-- Trạng thái xuất bản -->
+            <div class="mb-4 form-check form-switch">
+                <input asp-for="IsPublished" class="form-check-input" type="checkbox" role="switch" id="isPublishedCheck" />
+                <label class="form-check-label fw-semibold" for="isPublishedCheck">Xuất bản ngay</label>
             </div>
 
             <!-- Nút bấm -->
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary px-4">Lưu thay đổi</button>
-                <a asp-action="Index" class="btn btn-outline-secondary ms-2">Hủy bỏ</a>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-save me-1"></i> Lưu thay đổi
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Hủy bỏ
+                </a>
             </div>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
