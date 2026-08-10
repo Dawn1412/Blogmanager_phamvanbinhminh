@@ -1,0 +1,37 @@
+@model Blogmanager_phamvanbinhminh.Models.Post
+
+@{
+    ViewData["Title"] = "Chi tiết bài viết";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
+                <h4 class="mb-0"><i class="bi bi-file-text me-2"></i>Chi tiết bài viết</h4>
+                <span class="badge bg-light text-dark">ID: #@Model.Id</span>
+            </div>
+            <div class="card-body p-4">
+                <h2 class="card-title fw-bold text-primary mb-3">@Model.Title</h2>
+                
+                <div class="d-flex gap-4 text-muted mb-4 pb-2 border-bottom">
+                    <div><i class="bi bi-person me-1"></i><strong>Tác giả:</strong> @(string.IsNullOrEmpty(Model.Author) ? "Chưa cập nhật" : Model.Author)</div>
+                    <div><i class="bi bi-calendar3 me-1"></i><strong>Ngày đăng:</strong> @Model.PublishedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+
+                <div class="card-text fs-5 text-dark mb-4" style="line-height: 1.8; white-space: pre-line;">
+                    @Model.Content
+                </div>
+
+                <div class="d-flex gap-2 pt-3 border-top">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning text-dark">
+                        <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
+                    </a>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -18,10 +18,10 @@ public class LabController : Controller
         ViewBag.TieuDe = baiViet.Where(p => p.IsPublished)
             .OrderBy(p => p.Title).Select(p => p.Title).ToList();
 
-        ViewBag.BaiDãXuatBan = baiViet.Where(p => p.IsPublished)
+        ViewBag.BaiDaXuatBan = baiViet.Where(p => p.IsPublished)
             .OrderByDescending(p => p.ViewCount).ToList();
 
-        ViewBag.TongSoLuotXem = baiViet.Where(p => p.IsPublished).Sum(p => p.ViewCount);
+        ViewBag.TongLuotXem = baiViet.Where(p => p.IsPublished).Sum(p => p.ViewCount);
 
         ViewBag.BaiVietHotNhat = baiViet.OrderByDescending(p => p.ViewCount).FirstOrDefault();
         return View();

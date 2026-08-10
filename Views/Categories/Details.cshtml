@@ -1,0 +1,28 @@
+@model Blogmanager_phamvanbinhminh.Models.Category
+
+@{
+    ViewData["Title"] = "Chi tiết danh mục";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
+                <h4 class="mb-0"><i class="bi bi-folder me-2"></i>Chi tiết danh mục</h4>
+                <span class="badge bg-light text-dark">ID: #@Model.Id</span>
+            </div>
+            <div class="card-body p-4">
+                <h3 class="card-title fw-bold text-primary mb-4">@Model.Name</h3>
+
+                <div class="d-flex gap-2 pt-3 border-top">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning text-dark">
+                        <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
+                    </a>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

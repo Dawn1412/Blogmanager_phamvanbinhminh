@@ -8,22 +8,23 @@ using System.Globalization;
 
 namespace Blogmanager_phamvanbinhminh.Controllers
 {
-    public class PostsController : Controller
+    public class CategoriesController : Controller
     {
         private readonly ApplicationDBContext _context;
 
-        public PostsController(ApplicationDBContext context)
+        public CategoriesController(ApplicationDBContext context)
         {
             _context = context;
         }
 
-        // 1. INDEX: Danh sách bài viết + Tìm kiếm tiếng Việt + Phân trang
-        public async Task<IActionResult> Index(string? search, string? sort, int page = 1)
+        // 1. INDEX: Danh sách Danh mục + Tìm kiếm không dấu + Phân trang
+        public async Task<IActionResult> Index(string? search, int page = 1)
         {
             int pageSize = 5;
 
-            var postsQuery = await _context.Posts
-                .Include(p => p.Category)
+            // Nạp danh sách kèm đếm số Bài viết thuộc Danh mục
+            var categoriesList = await _context.Categories
+                .Include(c => c.Posts)
                 .ToListAsync();
 
             // Tìm kiếm tiếng Việt (có dấu & không dấu)
@@ -32,23 +33,15 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 var searchNoSign = RemoveDiacritics(search.Trim().ToLower());
                 var keywords = searchNoSign.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-                postsQuery = postsQuery.Where(p =>
+                categoriesList = categoriesList.Where(c =>
                 {
-                    var titleNoSign = RemoveDiacritics((p.Title ?? "").ToLower());
-                    var contentNoSign = RemoveDiacritics((p.Content ?? "").ToLower());
-
-                    return keywords.All(k => titleNoSign.Contains(k) || contentNoSign.Contains(k));
+                    var nameNoSign = RemoveDiacritics((c.Name ?? "").ToLower());
+                    return keywords.All(k => nameNoSign.Contains(k));
                 }).ToList();
             }
 
-            // Sắp xếp
-            var query = postsQuery.AsQueryable();
-            query = sort switch
-            {
-                "title" => query.OrderBy(p => p.Title),
-                "oldest" => query.OrderBy(p => p.PublishedAt),
-                _ => query.OrderByDescending(p => p.CreatedAt) // Mặc định sắp xếp theo CreatedAt giảm dần
-            };
+            // Sắp xếp theo tên A-Z
+            var query = categoriesList.OrderBy(c => c.Name).AsQueryable();
 
             // Phân trang
             int totalItems = query.Count();
@@ -56,16 +49,15 @@ namespace Blogmanager_phamvanbinhminh.Controllers
 
             if (page < 1) page = 1;
 
-            var pagedPosts = query
+            var pagedCategories = query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
 
-            PostListViewModel model = new PostListViewModel
+            CategoryListViewModel model = new CategoryListViewModel
             {
-                Posts = pagedPosts,
+                Categories = pagedCategories,
                 Search = search,
-                Sort = sort,
                 CurrentPage = page,
                 TotalPages = totalPages > 0 ? totalPages : 1
             };
@@ -73,101 +65,72 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return View(model);
         }
 
-        // 2. DETAILS
+        // 2. DETAILS: Xem chi tiết danh mục (kèm danh sách bài viết thuộc danh mục)
         public async Task<IActionResult> Details(int id)
         {
-            var post = await _context.Posts
-                .Include(p => p.Category)
+            var category = await _context.Categories
+                .Include(c => c.Posts)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (post == null) return NotFound();
-
-            return View(post);
+            if (category == null) return NotFound();
+            return View(category);
         }
 
-        // 3. CREATE
-        public async Task<IActionResult> Create()
-        {
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            return View();
-        }
+        // 3. CREATE: Hiển thị form và xử lý Thêm danh mục
+        public IActionResult Create() => View();
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Post post)
+        public async Task<IActionResult> Create(Category category)
         {
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Categories = await _context.Categories.ToListAsync();
-                return View(post);
-            }
+            if (!ModelState.IsValid) return View(category);
 
-            post.CreatedAt = DateTime.Now;
-            _context.Posts.Add(post);
+            _context.Categories.Add(category);
             await _context.SaveChangesAsync();
-
             return RedirectToAction(nameof(Index));
         }
 
-        // 4. EDIT
+        // 4. EDIT: Hiển thị form và xử lý Sửa danh mục
         public async Task<IActionResult> Edit(int id)
         {
-            var post = await _context.Posts.FindAsync(id);
-            if (post == null) return NotFound();
-
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            return View(post);
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound();
+            return View(category);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Post post)
+        public async Task<IActionResult> Edit(int id, Category category)
         {
-            if (id != post.Id) return NotFound();
+            if (id != category.Id) return NotFound();
+            if (!ModelState.IsValid) return View(category);
 
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Categories = await _context.Categories.ToListAsync();
-                return View(post);
-            }
-
-            try
-            {
-                _context.Update(post);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Posts.Any(e => e.Id == post.Id)) return NotFound();
-                else throw;
-            }
-
+            _context.Update(category);
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        // 5. DELETE
+        // 5. DELETE: Hiển thị trang xác nhận và xử lý Xóa
         public async Task<IActionResult> Delete(int id)
         {
-            var post = await _context.Posts
-                .Include(p => p.Category)
+            var category = await _context.Categories
+                .Include(c => c.Posts)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (post == null) return NotFound();
-
-            return View(post);
+            if (category == null) return NotFound();
+            return View(category);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var post = await _context.Posts.FindAsync(id);
-            if (post != null)
+            var category = await _context.Categories.FindAsync(id);
+            if (category != null)
             {
-                _context.Posts.Remove(post);
+                _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
             }
-
             return RedirectToAction(nameof(Index));
         }
 

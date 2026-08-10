@@ -7,9 +7,8 @@ namespace Blogmanager_phamvanbinhminh.Data
     {
         public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options) { }
 
-        public DbSet<Post> Posts { get; set; }
-        
-        // Thêm DbSet cho Category
-        public DbSet<Category> Categories { get; set; }
+        public DbSet<Post> Posts => Set<Post>();
+        public DbSet<Category> Categories => Set<Category>();
+        public DbSet<Tag> Tags => Set<Tag>(); 
     }
 }

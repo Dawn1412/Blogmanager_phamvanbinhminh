@@ -1,0 +1,44 @@
+@model Blogmanager_phamvanbinhminh.Models.Post
+
+@{
+    ViewData["Title"] = "Xóa bài viết";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger shadow-sm mt-3">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa bài viết</h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-circle me-1"></i> Bạn có chắc chắn muốn xóa bài viết này? Hành động này <strong>không thể hoàn tác</strong>.
+                </div>
+
+                <dl class="row mt-3">
+                    <dt class="col-sm-3 fw-bold">ID:</dt>
+                    <dd class="col-sm-9">#@Model.Id</dd>
+
+                    <dt class="col-sm-3 fw-bold">Tiêu đề:</dt>
+                    <dd class="col-sm-9 text-danger fw-semibold">@Model.Title</dd>
+
+                    <dt class="col-sm-3 fw-bold">Tác giả:</dt>
+                    <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.Author) ? "Chưa cập nhật" : Model.Author)</dd>
+
+                    <dt class="col-sm-3 fw-bold">Ngày đăng:</dt>
+                    <dd class="col-sm-9">@Model.PublishedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+                </dl>
+
+                <form asp-action="Delete" method="post" class="mt-4 pt-3 border-top d-flex gap-2">
+                    <input type="hidden" asp-for="Id" />
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash-fill me-1"></i> Xác nhận xóa
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Hủy / Quay lại
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
