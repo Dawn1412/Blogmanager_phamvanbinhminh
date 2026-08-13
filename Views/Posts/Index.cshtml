@@ -6,12 +6,15 @@
 
 <h2 class="fw-bold mb-3">Danh sách bài viết</h2>
 
-<!-- Nút Thêm bài viết -->
-<div class="mb-3">
-    <a asp-action="Create" class="btn btn-primary rounded-pill px-3">
-        <i class="bi bi-plus-circle me-1"></i> Thêm bài viết
-    </a>
-</div>
+<!-- Nút Thêm bài viết: Chỉ hiện khi ĐÃ ĐĂNG NHẬP -->
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <div class="mb-3">
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-3">
+            <i class="bi bi-plus-circle me-1"></i> Thêm bài viết
+        </a>
+    </div>
+}
 
 <!-- Form Tìm kiếm + Sắp xếp -->
 <form asp-action="Index" method="get" class="mb-4">
@@ -49,7 +52,7 @@
             <tr>
                 <th>Tiêu đề</th>
                 <th>Danh mục</th>
-                <th>Thẻ</th> <!-- 🔥 Cột Thẻ mới thêm -->
+                <th>Thẻ</th>
                 <th>Ngày xuất bản</th>
                 <th>Trạng thái</th>
                 <th class="text-center">Hành động</th>
@@ -70,7 +73,7 @@
                         </span>
                     </td>
 
-                    <!-- 🔥 HIỂN THỊ CÁC THẺ (TAGS) 🔥 -->
+                    <!-- HIỂN THỊ CÁC THẺ (TAGS) -->
                     <td>
                         @if (item.Tags != null && item.Tags.Any())
                         {
@@ -104,40 +107,54 @@
                     </td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm" role="group">
+                            <!-- Nút Xem chi tiết: Ai cũng xem được -->
                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-secondary">
                                 <i class="bi bi-eye"></i> Xem chi tiết
                             </a>
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning text-dark">
-                                <i class="bi bi-pencil-square"></i> Sửa
-                            </a>
-                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger">
-                                <i class="bi bi-trash"></i> Xóa (trang)
-                            </a>
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id">
-                                <i class="bi bi-trash-fill"></i> Xóa (modal)
-                            </button>
+
+                            <!-- 🔥 Nút Sửa: Chỉ hiện khi ĐÃ ĐĂNG NHẬP -->
+                            @if (User.Identity != null && User.Identity.IsAuthenticated)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning text-dark">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </a>
+                            }
+
+                            <!-- 🔥 Các Nút Xóa: Chỉ hiện với vai trò ADMIN -->
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Xóa (trang)
+                                </a>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id">
+                                    <i class="bi bi-trash-fill"></i> Xóa (modal)
+                                </button>
+                            }
                         </div>
 
-                        <!-- Modal Xóa -->
-                        <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content text-start">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        Bạn có chắc chắn muốn xóa bài viết <strong>"@item.Title"</strong> không?
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
-                                            <button type="submit" class="btn btn-danger">Xóa luôn</button>
-                                        </form>
+                        <!-- Modal Xóa (Cũng chỉ render khi là Admin) -->
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content text-start">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Bạn có chắc chắn muốn xóa bài viết <strong>"@item.Title"</strong> không?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-danger">Xóa luôn</button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        }
                     </td>
                 </tr>
             }
@@ -145,7 +162,6 @@
         else
         {
             <tr>
-                <!-- 🔥 Đã đổi colspan="6" cho khớp 6 cột của bảng -->
                 <td colspan="6" class="text-center text-muted py-4">Chưa có dữ liệu bài viết.</td>
             </tr>
         }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blogmanager_phamvanbinhminh.Data;
@@ -8,6 +9,7 @@ using System.Globalization;
 
 namespace Blogmanager_phamvanbinhminh.Controllers
 {
+    [Authorize] // 🔥 Yêu cầu ĐĂNG NHẬP cho toàn bộ Controller
     public class PostsController : Controller
     {
         private readonly ApplicationDBContext _context;
@@ -17,7 +19,8 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             _context = context;
         }
 
-        // 1. INDEX: Danh sách bài viết + Tìm kiếm tiếng Việt + Phân trang
+        // 1. INDEX: Khách vãng lai xem danh sách
+        [AllowAnonymous]
         public async Task<IActionResult> Index(string? search, string? sort, int page = 1)
         {
             int pageSize = 5;
@@ -27,7 +30,6 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 .Include(p => p.Tags)
                 .ToListAsync();
 
-            // Tìm kiếm tiếng Việt (có dấu & không dấu)
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var searchNoSign = RemoveDiacritics(search.Trim().ToLower());
@@ -42,7 +44,6 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 }).ToList();
             }
 
-            // Sắp xếp
             var query = postsQuery.AsQueryable();
             query = sort switch
             {
@@ -51,7 +52,6 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 _ => query.OrderByDescending(p => p.CreatedAt)
             };
 
-            // Phân trang
             int totalItems = query.Count();
             int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
@@ -74,7 +74,8 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return View(model);
         }
 
-        // 2. DETAILS
+        // 2. DETAILS: Khách vãng lai xem chi tiết
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int id)
         {
             var post = await _context.Posts
@@ -87,7 +88,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return View(post);
         }
 
-        // 3. CREATE
+        // 3. CREATE (Yêu cầu Đăng nhập)
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = await _context.Categories.ToListAsync();
@@ -108,14 +109,12 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 return View(post);
             }
 
-            // 1. Xử lý gán thẻ có sẵn
             if (selectedTagIds != null && selectedTagIds.Length > 0)
             {
                 var existingTags = await _context.Tags.Where(t => selectedTagIds.Contains(t.Id)).ToListAsync();
                 post.Tags.AddRange(existingTags);
             }
 
-            // 2. Xử lý thẻ mới từ Input text
             if (!string.IsNullOrWhiteSpace(newTags))
             {
                 var tagNames = newTags.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -147,7 +146,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // 4. EDIT
+        // 4. EDIT (Yêu cầu Đăng nhập)
         public async Task<IActionResult> Edit(int id)
         {
             var post = await _context.Posts
@@ -186,7 +185,6 @@ namespace Blogmanager_phamvanbinhminh.Controllers
 
                 if (existingPost == null) return NotFound();
 
-                // Cập nhật thông tin cơ bản
                 existingPost.Title = post.Title;
                 existingPost.Content = post.Content;
                 existingPost.Author = post.Author;
@@ -194,17 +192,14 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 existingPost.IsPublished = post.IsPublished;
                 existingPost.CategoryId = post.CategoryId;
 
-                // Cập nhật Tags: Xóa toàn bộ tag cũ
                 existingPost.Tags.Clear();
 
-                // Gán các tag đã chọn từ Checkbox
                 if (selectedTagIds != null && selectedTagIds.Length > 0)
                 {
                     var selectedTags = await _context.Tags.Where(t => selectedTagIds.Contains(t.Id)).ToListAsync();
                     existingPost.Tags.AddRange(selectedTags);
                 }
 
-                // Gán/tạo thêm các thẻ mới từ Textbox
                 if (!string.IsNullOrWhiteSpace(newTags))
                 {
                     var tagNames = newTags.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -241,7 +236,8 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // 5. DELETE
+        // 5. DELETE (Yêu cầu Đăng nhập)
+        [Authorize(Roles = "Admin")] // 🔥 Chỉ Admin mới được xóa bài viết
         public async Task<IActionResult> Delete(int id)
         {
             var post = await _context.Posts
@@ -256,6 +252,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")] // 🔥 Chỉ Admin mới được xóa bài viết
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var post = await _context.Posts.FindAsync(id);
@@ -268,7 +265,6 @@ namespace Blogmanager_phamvanbinhminh.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Hàm xóa dấu tiếng Việt
         private string RemoveDiacritics(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return text;
