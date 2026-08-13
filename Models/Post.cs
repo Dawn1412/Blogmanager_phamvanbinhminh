@@ -38,4 +38,6 @@ public class Post
     public List<Tag> Tags { get; set; } = new();   // Navigation property
 
     public string MoTaNgan() => $"{Title} ({PublishedAt:dd/MM/yyyy})";
+
+    public string? OwnerId { get; set; } // Dòng này để lưu UserId của người tạo
 }

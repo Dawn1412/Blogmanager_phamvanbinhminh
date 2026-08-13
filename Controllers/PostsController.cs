@@ -1,3 +1,4 @@
+using System.Security.Claims; // 👈 Dùng để lấy ID của User đang đăng nhập
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -108,6 +109,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 ViewBag.NewTags = newTags;
                 return View(post);
             }
+        post.OwnerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (selectedTagIds != null && selectedTagIds.Length > 0)
             {
@@ -154,7 +156,11 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (post == null) return NotFound();
-
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (!User.IsInRole("Admin") && post.OwnerId != currentUserId)
+    {
+        return Forbid(); // Trả về lỗi 403 Chặn truy cập
+    }
             ViewBag.Categories = await _context.Categories.ToListAsync();
             ViewBag.Tags = await _context.Tags.ToListAsync();
             ViewBag.SelectedTagIds = post.Tags.Select(t => t.Id).ToList();
@@ -184,7 +190,21 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                     .FirstOrDefaultAsync(p => p.Id == id);
 
                 if (existingPost == null) return NotFound();
+            
+                    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!User.IsInRole("Admin") && existingPost.OwnerId != currentUserId)
+            {
+                return Forbid();
+            }
 
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Categories = await _context.Categories.ToListAsync();
+                ViewBag.Tags = await _context.Tags.ToListAsync();
+                ViewBag.SelectedTagIds = selectedTagIds?.ToList() ?? new List<int>();
+                ViewBag.NewTags = newTags;
+                return View(post);
+            }
                 existingPost.Title = post.Title;
                 existingPost.Content = post.Content;
                 existingPost.Author = post.Author;
@@ -237,7 +257,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
         }
 
         // 5. DELETE (Yêu cầu Đăng nhập)
-        [Authorize(Roles = "Admin")] // 🔥 Chỉ Admin mới được xóa bài viết
+        [Authorize] // 🔥 Chỉ Admin mới được xóa bài viết
         public async Task<IActionResult> Delete(int id)
         {
             var post = await _context.Posts
@@ -246,18 +266,29 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (post == null) return NotFound();
+        
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!User.IsInRole("Admin") && post.OwnerId != currentUserId)
+        {
+            return Forbid();
+        }  
 
             return View(post);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")] // 🔥 Chỉ Admin mới được xóa bài viết
+        [Authorize] // 🔥 Chỉ Admin mới được xóa bài viết
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var post = await _context.Posts.FindAsync(id);
             if (post != null)
             {
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!User.IsInRole("Admin") && post.OwnerId != currentUserId)
+                {
+                    return Forbid();
+                }
                 _context.Posts.Remove(post);
                 await _context.SaveChangesAsync();
             }
