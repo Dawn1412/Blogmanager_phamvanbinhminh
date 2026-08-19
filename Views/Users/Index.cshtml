@@ -1,0 +1,40 @@
+@model IEnumerable<Blogmanager_phamvanbinhminh.ViewModels.UserViewModel>
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+}
+
+<h2 class="fw-bold mb-3">Quản lý tài khoản</h2>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle border">
+        <thead class="table-light">
+            <tr>
+                <th>Email</th>
+                <th>Quyền (Role)</th>
+                <th class="text-center">Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td class="fw-semibold">@user.Email</td>
+                    <td>
+                        @foreach (var role in user.Roles)
+                        {
+                            <span class="badge @(role == "Admin" ? "bg-danger" : "bg-primary")">@role</span>
+                        }
+                    </td>
+                    <td class="text-center">
+                        <!-- Nút Xóa -->
+                        <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
