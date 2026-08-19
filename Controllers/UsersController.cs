@@ -27,7 +27,7 @@ namespace Blogmanager_phamvanbinhminh.Controllers
                 userViewModels.Add(new UserViewModel
                 {
                     Id = user.Id,
-                    Email = user.Email,
+                    Email = user.Email!,
                     Roles = roles
                 });
             }

@@ -2,11 +2,17 @@ using Microsoft.AspNetCore.Identity;
 using Blogmanager_phamvanbinhminh.Data;
 using Blogmanager_phamvanbinhminh.Models;
 using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.SwaggerGen; // 👈 Bổ sung nếu cần
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// 🔥 Swagger API Services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -35,6 +41,12 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+else
+{
+    // 🔥 Bật giao diện Swagger UI khi ở môi trường Development
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 app.MapStaticAssets();
@@ -44,6 +56,9 @@ app.UseRouting(); // 1. Định tuyến trước
 // 🔥 2. Bổ sung Middleware Xác thực & Phân quyền chuẩn thứ tự
 app.UseAuthentication(); // 👈 BỔ SUNG: Kiểm tra "Bạn là ai?"
 app.UseAuthorization();  // Kiểm tra "Bạn được làm gì?"
+
+// 🔥 Kích hoạt định tuyến cho ApiController (PostsApiController)
+app.MapControllers();
 
 app.MapControllerRoute(
     name: "default",
